@@ -1,8 +1,13 @@
-import librosa.display
+import os
+
+from onnxruntime import InferenceSession
+
+from torch import rand
+from torch.onnx import export
+
 from voicefixer.tools.pytorch_util import *
 from voicefixer.tools.wav import *
 from voicefixer.restorer.model import VoiceFixer as voicefixer_fe
-import os
 
 EPS = 1e-8
 
@@ -11,23 +16,30 @@ class VoiceFixer(nn.Module):
     def __init__(self):
         super(VoiceFixer, self).__init__()
         self._model = voicefixer_fe(channels=2, sample_rate=44100)
-        # print(os.path.join(os.path.expanduser('~'), ".cache/voicefixer/analysis_module/checkpoints/epoch=15_trimed_bn.ckpt"))
-        self.analysis_module_ckpt = os.path.join(
-                    os.path.expanduser("~"),
-                    ".cache/voicefixer/analysis_module/checkpoints/vf.ckpt",
-        )
-        if(not os.path.exists(self.analysis_module_ckpt)):
-            raise RuntimeError("Error 0: The checkpoint for analysis module (vf.ckpt) is not found in ~/.cache/voicefixer/analysis_module/checkpoints. \
-                                By default the checkpoint should be download automatically by this program. Something bad may happened.\
-                                But don't worry! Alternatively you can download it directly from Zenodo: https://zenodo.org/record/5600188/files/vf.ckpt?download=1.")
-        saved_state_dict = torch.load(self.analysis_module_ckpt)
-        model_state_dict = self._model.state_dict()
+        # # print(os.path.join(os.path.expanduser('~'), ".cache/voicefixer/analysis_module/checkpoints/epoch=15_trimed_bn.ckpt"))
+        # self.analysis_module_ckpt = os.path.join(
+        #             os.path.expanduser("~"),
+        #             ".cache/voicefixer/analysis_module/checkpoints/vf.ckpt",
+        # )
+        # if(not os.path.exists(self.analysis_module_ckpt)):
+        #     raise RuntimeError("Error 0: The checkpoint for analysis module (vf.ckpt) is not found in ~/.cache/voicefixer/analysis_module/checkpoints. \
+        #                         By default the checkpoint should be download automatically by this program. Something bad may happened.\
+        #                         But don't worry! Alternatively you can download it directly from Zenodo: https://zenodo.org/record/5600188/files/vf.ckpt?download=1.")
+        # saved_state_dict = torch.load(self.analysis_module_ckpt)
+        # model_state_dict = self._model.state_dict()
 
-        new_state_dict = {k: v for k, v in saved_state_dict.items() if k in model_state_dict}
+        # new_state_dict = {k: v for k, v in saved_state_dict.items() if k in model_state_dict}
 
-        model_state_dict.update(new_state_dict)
-        self._model.load_state_dict(model_state_dict, strict=False)
-        self._model.eval()
+        # model_state_dict.update(new_state_dict)
+        # self._model.load_state_dict(model_state_dict, strict=False)
+
+        # i1 = rand(1, 1, 6001, 1025, requires_grad=True)
+        # i2 = rand(1, 1, 6001, 128, requires_grad=True)
+        # export(self._model, (i1, i2), "gen.onnx", 
+        #        input_names=["ignore", "input"], output_names=["output"],
+        #        dynamic_axes= {"input": {2: "size"}}, export_params=True, verbose=False)
+
+        # self._model.eval()
 
     def _load_wav_energy(self, path, sample_rate, threshold=0.95):
         wav_10k, _ = librosa.load(path, sr=sample_rate)
@@ -75,14 +87,14 @@ class VoiceFixer(nn.Module):
             est, ref = est[..., :min_len], ref[..., :min_len]
             return est, ref
 
-    def _pre(self, model, input, cuda):
+    def _pre(self, input, cuda):
         input = input[None, None, ...]
         input = torch.tensor(input)
         input = try_tensor_cuda(input, cuda=cuda)
-        sp, _, _ = model.f_helper.wav_to_spectrogram_phase(input)
-        mel_orig = model.mel(sp.permute(0, 1, 3, 2)).permute(0, 1, 3, 2)
-        # return models.to_log(sp), models.to_log(mel_orig)
-        return sp, mel_orig
+        sp, _, _ = self._model.f_helper.wav_to_spectrogram_phase(input)
+        mel_orig = self._model.mel(sp.permute(0, 1, 3, 2)).permute(0, 1, 3, 2)
+
+        return mel_orig
 
     def remove_higher_frequency(self, wav, ratio=0.95):
         stft = librosa.stft(wav)
@@ -105,14 +117,14 @@ class VoiceFixer(nn.Module):
 
     @torch.no_grad()
     def restore_inmem(self, wav_10k, cuda=False, mode=0, your_vocoder_func=None):
-        check_cuda_availability(cuda=cuda)
-        self._model = try_tensor_cuda(self._model, cuda=cuda)
-        if mode == 0:
-            self._model.eval()
-        elif mode == 1:
-            self._model.eval()
-        elif mode == 2:
-            self._model.train()  # More effective on seriously demaged speech
+        # check_cuda_availability(cuda=cuda)
+        # self._model = try_tensor_cuda(self._model, cuda=cuda)
+        # if mode == 0:
+        #     self._model.eval()
+        # elif mode == 1:
+        #     self._model.eval()
+        # elif mode == 2:
+        #     self._model.train()  # More effective on seriously demaged speech
         res = []
         seg_length = 44100 * 30
         break_point = seg_length
@@ -120,9 +132,22 @@ class VoiceFixer(nn.Module):
             segment = wav_10k[break_point - seg_length : break_point]
             if mode == 1:
                 segment = self.remove_higher_frequency(segment)
-            sp, mel_noisy = self._pre(self._model, segment, cuda)
-            out_model = self._model(sp, mel_noisy)
-            denoised_mel = from_log(out_model["mel"])
+            
+            mel_noisy = self._pre(segment, cuda)
+
+            session = InferenceSession("gen.onnx", providers=["CPUExecutionProvider"])
+
+            print(session.get_inputs()[0])
+            print(session.get_outputs()[0])
+
+            # print(mel_noisy.numpy().shape)
+
+            logits = session.run(["output"], {"input": mel_noisy.numpy()})
+            out_model = torch.from_numpy(logits[0])
+            
+            #out_model = self._model(sp, mel_noisy)["mel"]
+
+            denoised_mel = from_log(out_model)
             if your_vocoder_func is None:
                 out = self._model.vocoder(denoised_mel, cuda=cuda)
             else:
