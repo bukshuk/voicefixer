@@ -135,7 +135,7 @@ class VoiceFixer(nn.Module):
             
             mel_noisy = self._pre(segment, cuda)
 
-            session = InferenceSession("gen_60.onnx", providers=["CPUExecutionProvider"])
+            session = InferenceSession("models/gen_180.onnx", providers=["CPUExecutionProvider"])
             logits = session.run(["output"], {"input": mel_noisy.numpy()})
             out_model = torch.from_numpy(logits[0])
             

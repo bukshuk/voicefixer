@@ -5,4 +5,6 @@ dist
 .idea
 build
 
-/*.onnx
+/models/*.onnx
+
+/audio/*_enhanced.wav

@@ -3,8 +3,10 @@ from voicefixer import VoiceFixer
 
 voicefixer = VoiceFixer()
 
-base_dir = "D:/tmp"
-file_name = "zmm-00_ambe"
+length = 19
+
+base_dir = "audio"
+file_name = f"zmm-{length}_ambe"
 
 start_time = timer()
 
@@ -14,4 +16,4 @@ end_time = timer()
 
 total = end_time-start_time
 
-print(f"{total:.2f} (sec). RTF: {total / 20:.2f}")
+print(f"{total:.2f} (sec). RTF: {total / length:.2f}")
