@@ -33,8 +33,8 @@ class VoiceFixer(nn.Module):
         # model_state_dict.update(new_state_dict)
         # self._model.load_state_dict(model_state_dict, strict=False)
 
-        # i1 = rand(1, 1, 6001, 1025, requires_grad=True)
-        # i2 = rand(1, 1, 6001, 128, requires_grad=True)
+        # i1 = rand(1, 1, 18001, 1025, requires_grad=True)
+        # i2 = rand(1, 1, 18001, 128, requires_grad=True)
         # export(self._model, (i1, i2), "gen.onnx", 
         #        input_names=["ignore", "input"], output_names=["output"],
         #        dynamic_axes= {"input": {2: "size"}}, export_params=True, verbose=False)
@@ -135,17 +135,11 @@ class VoiceFixer(nn.Module):
             
             mel_noisy = self._pre(segment, cuda)
 
-            session = InferenceSession("gen.onnx", providers=["CPUExecutionProvider"])
-
-            print(session.get_inputs()[0])
-            print(session.get_outputs()[0])
-
-            # print(mel_noisy.numpy().shape)
-
+            session = InferenceSession("gen_60.onnx", providers=["CPUExecutionProvider"])
             logits = session.run(["output"], {"input": mel_noisy.numpy()})
             out_model = torch.from_numpy(logits[0])
             
-            #out_model = self._model(sp, mel_noisy)["mel"]
+            # out_model = self._model(torch.rand(1), mel_noisy)["mel"]
 
             denoised_mel = from_log(out_model)
             if your_vocoder_func is None:
