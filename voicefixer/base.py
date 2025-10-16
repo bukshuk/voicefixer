@@ -16,30 +16,6 @@ class VoiceFixer(nn.Module):
     def __init__(self):
         super(VoiceFixer, self).__init__()
         self._model = voicefixer_fe(channels=2, sample_rate=44100)
-        # # print(os.path.join(os.path.expanduser('~'), ".cache/voicefixer/analysis_module/checkpoints/epoch=15_trimed_bn.ckpt"))
-        # self.analysis_module_ckpt = os.path.join(
-        #             os.path.expanduser("~"),
-        #             ".cache/voicefixer/analysis_module/checkpoints/vf.ckpt",
-        # )
-        # if(not os.path.exists(self.analysis_module_ckpt)):
-        #     raise RuntimeError("Error 0: The checkpoint for analysis module (vf.ckpt) is not found in ~/.cache/voicefixer/analysis_module/checkpoints. \
-        #                         By default the checkpoint should be download automatically by this program. Something bad may happened.\
-        #                         But don't worry! Alternatively you can download it directly from Zenodo: https://zenodo.org/record/5600188/files/vf.ckpt?download=1.")
-        # saved_state_dict = torch.load(self.analysis_module_ckpt)
-        # model_state_dict = self._model.state_dict()
-
-        # new_state_dict = {k: v for k, v in saved_state_dict.items() if k in model_state_dict}
-
-        # model_state_dict.update(new_state_dict)
-        # self._model.load_state_dict(model_state_dict, strict=False)
-
-        # i1 = rand(1, 1, 18001, 1025, requires_grad=True)
-        # i2 = rand(1, 1, 18001, 128, requires_grad=True)
-        # export(self._model, (i1, i2), "gen.onnx", 
-        #        input_names=["ignore", "input"], output_names=["output"],
-        #        dynamic_axes= {"input": {2: "size"}}, export_params=True, verbose=False)
-
-        # self._model.eval()
 
     def _load_wav_energy(self, path, sample_rate, threshold=0.95):
         wav_10k, _ = librosa.load(path, sr=sample_rate)
@@ -66,9 +42,7 @@ class VoiceFixer(nn.Module):
             mel_sp_est[..., 5 : int(freq_dim * cutoff)],
             mel_sp_target[..., 5 : int(freq_dim * cutoff)],
         )
-        energy_est, energy_target = torch.mean(mel_sp_est_low, dim=(2, 3)), torch.mean(
-            mel_sp_target_low, dim=(2, 3)
-        )
+        energy_est, energy_target = torch.mean(mel_sp_est_low, dim=(2, 3)), torch.mean(mel_sp_target_low, dim=(2, 3))
         amp_ratio = energy_target / energy_est
         return mel_sp_est * amp_ratio[..., None, None], mel_sp_target
 
@@ -116,36 +90,23 @@ class VoiceFixer(nn.Module):
         return librosa.istft(stft)
 
     @torch.no_grad()
-    def restore_inmem(self, wav_10k, cuda=False, mode=0, your_vocoder_func=None):
-        # check_cuda_availability(cuda=cuda)
-        # self._model = try_tensor_cuda(self._model, cuda=cuda)
-        # if mode == 0:
-        #     self._model.eval()
-        # elif mode == 1:
-        #     self._model.eval()
-        # elif mode == 2:
-        #     self._model.train()  # More effective on seriously demaged speech
+    def restore_in_memory(self, wav_10k, cuda=False):
         res = []
         seg_length = 44100 * 30
         break_point = seg_length
         while break_point < wav_10k.shape[0] + seg_length:
             segment = wav_10k[break_point - seg_length : break_point]
-            if mode == 1:
-                segment = self.remove_higher_frequency(segment)
-            
+
             mel_noisy = self._pre(segment, cuda)
 
-            session = InferenceSession("models/gen_180.onnx", providers=["CPUExecutionProvider"])
+            session = InferenceSession("models/gen.onnx", providers=["CPUExecutionProvider"])
             logits = session.run(["output"], {"input": mel_noisy.numpy()})
             out_model = torch.from_numpy(logits[0])
-            
-            # out_model = self._model(torch.rand(1), mel_noisy)["mel"]
 
-            denoised_mel = from_log(out_model)
-            if your_vocoder_func is None:
-                out = self._model.vocoder(denoised_mel, cuda=cuda)
-            else:
-                out = your_vocoder_func(denoised_mel)
+            mel_enhanced = from_log(out_model)
+
+            out = self._model.vocoder(mel_enhanced, cuda=cuda)
+
             # unify energy
             if torch.max(torch.abs(out)) > 1.0:
                 out = out / torch.max(torch.abs(out))
@@ -159,7 +120,5 @@ class VoiceFixer(nn.Module):
 
     def restore(self, input, output, cuda=False, mode=0, your_vocoder_func=None):
         wav_10k = self._load_wav(input, sample_rate=44100)
-        out_np_wav = self.restore_inmem(
-            wav_10k, cuda=cuda, mode=mode, your_vocoder_func=your_vocoder_func
-        )
+        out_np_wav = self.restore_in_memory(wav_10k, cuda=cuda)
         save_wave(out_np_wav, fname=output, sample_rate=44100)

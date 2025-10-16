@@ -3,10 +3,10 @@ from voicefixer import VoiceFixer
 
 voicefixer = VoiceFixer()
 
-length = 19
+length = 64
 
-base_dir = "audio"
-file_name = f"zmm-{length}_ambe"
+base_dir = "d:/tmp"
+file_name = f"zmm-01_ambe"
 
 start_time = timer()
 
