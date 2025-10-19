@@ -8,3 +8,4 @@ build
 /models/*.onnx
 
 /audio/*_vf.wav
+/audio/*_enhanced.wav

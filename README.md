@@ -4,8 +4,11 @@
 python -W ignore::DeprecationWarning -m unittest .\test\base_test.py
 ```
 
-## Export ONNX model (<= 30 sec)
+## Export GEN.ONNX model (<= 30 sec)
 ```python
+from torch import rand
+from torch.onnx import export
+
 i1 = rand(1, 1, 3001, 1025, requires_grad=True)
 i2 = rand(1, 1, 3001, 128, requires_grad=True)
     export(self._model, (i1, i2), "models/gen.onnx",
@@ -13,15 +16,36 @@ i2 = rand(1, 1, 3001, 128, requires_grad=True)
     dynamic_axes= {"input": {2: "size"}}, export_params=True, verbose=False)
 ```
 
+## Export VOC.ONNX model (<= 30 sec)
+```python
+from torch import rand
+from torch.onnx import export
+
+input = rand(1, 128, 3006, requires_grad=True)
+export(
+    self.model,
+    input,
+    "models/voc.onnx",
+    input_names=["input"],
+    output_names=["output"],
+    dynamic_axes={"input": {2: "size"}},
+    export_params=True,
+    verbose=False,
+)
+```
+
 [![arXiv](https://img.shields.io/badge/arXiv-2109.13731-brightgreen.svg?style=flat-square)](https://arxiv.org/abs/2109.13731) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1HYYUepIsl2aXsdET6P_AmNVXuWP1MCMf?usp=sharing) [![PyPI version](https://badge.fury.io/py/voicefixer.svg)](https://badge.fury.io/py/voicefixer) [![githubio](https://img.shields.io/badge/GitHub.io-Audio_Samples-blue?logo=Github&style=flat-square)](https://haoheliu.github.io/demopage-voicefixer)[![HuggingFace](https://img.shields.io/badge/%F0%9F%A4%97-Models%20on%20Hub-yellow)](https://huggingface.co/spaces/akhaliq/VoiceFixer)
 
-- [:speaking_head: :wrench: VoiceFixer](#speaking_head-wrench-voicefixer)
+- [:speaking\_head: :wrench: VoiceFixer](#speaking_head-wrench-voicefixer)
   - [Demo](#demo)
   - [Usage](#usage)
+    - [Run Modes](#run-modes)
     - [Command line](#command-line)
     - [Desktop App](#desktop-app)
     - [Python Examples](#python-examples)
     - [Docker](#docker)
+      - [OS Agnostic](#os-agnostic)
+      - [Wrapper script: Linux and MacOS](#wrapper-script-linux-and-macos)
     - [Others Features](#others-features)
   - [Materials](#materials)
   - [Change log](#change-log)

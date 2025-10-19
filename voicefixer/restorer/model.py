@@ -1,11 +1,7 @@
-# import pytorch_lightning as pl
-
-import torch.utils
 from voicefixer.tools.mel_scale import MelScale
-import torch.utils.data
+
 import matplotlib.pyplot as plt
-import librosa.display
-from voicefixer.vocoder.base import Vocoder
+
 from voicefixer.tools.pytorch_util import *
 from voicefixer.restorer.model_kqq_bn import UNetResComplex_100Mb
 from voicefixer.tools.random_ import *
@@ -176,8 +172,6 @@ class VoiceFixer(nn.Module):
 
         # self.am = AudioMetrics()
         # self.im = ImgMetrics()
-
-        self.vocoder = Vocoder(sample_rate=44100)
 
         self.valid = None
         self.fake = None
@@ -355,9 +349,6 @@ class VoiceFixer(nn.Module):
 
         self.g_loss_weight = 0.01
         self.d_loss_weight = 1
-
-    def get_vocoder(self):
-        return self.vocoder
 
     def get_f_helper(self):
         return self.f_helper
