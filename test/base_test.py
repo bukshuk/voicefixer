@@ -32,7 +32,7 @@ class MainTest(unittest.TestCase):
 
         rtf = (end_time - start_time) / index
 
-        self.assertGreater(rtf, 1)
+        self.assertGreater(rtf, 0.5)
         self.assertLess(rtf, 2)
 
         self.check_wav(out_file_name)

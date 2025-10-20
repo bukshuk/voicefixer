@@ -1,18 +1,26 @@
 from onnxruntime import InferenceSession
 
+from voicefixer.tools.mel_scale import MelScale
+from voicefixer.tools.modules.fDomainHelper import FDomainHelper
 from voicefixer.tools.pytorch_util import *
 from voicefixer.tools.wav import *
-from voicefixer.restorer.model import VoiceFixer as voicefixer_fe
 from voicefixer.vocoder.base import Vocoder
-
-EPS = 1e-8
 
 
 class VoiceFixer(nn.Module):
     def __init__(self):
         super(VoiceFixer, self).__init__()
-        self._model = voicefixer_fe(channels=2, sample_rate=44100)
-        self._vocoder = Vocoder(sample_rate=44100)
+
+        self._first_stage_model = InferenceSession("models/01.onnx", providers=["CPUExecutionProvider"])
+
+        self._f_domain_helper = FDomainHelper()
+
+        sample_rate=44100
+        window_size = 2048
+        n_stft = window_size // 2 + 1
+        self._mel_scale = MelScale(sample_rate=sample_rate, n_stft=n_stft)
+
+        self._vocoder = Vocoder(sample_rate)
 
     def _load_wav_energy(self, path, sample_rate, threshold=0.95):
         wav_10k, _ = librosa.load(path, sr=sample_rate)
@@ -62,8 +70,8 @@ class VoiceFixer(nn.Module):
         input = input[None, None, ...]
         input = torch.tensor(input)
         input = try_tensor_cuda(input, cuda=cuda)
-        sp, _, _ = self._model.f_helper.wav_to_spectrogram_phase(input)
-        mel_orig = self._model.mel(sp.permute(0, 1, 3, 2)).permute(0, 1, 3, 2)
+        sp, _, _ = self._f_domain_helper.wav_to_spectrogram_phase(input)
+        mel_orig = self._mel_scale(sp.permute(0, 1, 3, 2)).permute(0, 1, 3, 2)
 
         return mel_orig
 
@@ -76,23 +84,12 @@ class VoiceFixer(nn.Module):
             segment = wav_10k[break_point - seg_length : break_point]
 
             mel_noisy = self._pre(segment, cuda)
-            # print(mel_noisy[0, 0, :5, :8])
-            # print(mel_noisy.shape)
-            # print(type(mel_noisy))
 
-            session = InferenceSession("models/gen.onnx", providers=["CPUExecutionProvider"])
-            logits = session.run(["output"], {"input": mel_noisy.numpy()})
+            logits = self._first_stage_model.run(["output"], {"input": mel_noisy.numpy()})
             out_model = torch.from_numpy(logits[0])
-
-            # print(out_model.shape)
-
             mel_enhanced = from_log(out_model)
 
-            # print(mel_enhanced.shape)
-
             out = self._vocoder(mel_enhanced, cuda=cuda)
-
-            # print(out.shape)
 
             # unify energy
             if torch.max(torch.abs(out)) > 1.0:
@@ -107,9 +104,5 @@ class VoiceFixer(nn.Module):
 
     def restore(self, input, output, cuda=False, mode=0, your_vocoder_func=None):
         wav_10k = self._load_wav(input, sample_rate=44100)
-        # print(wav_10k[:10])
-        # print(wav_10k.shape)
-        # print(type(wav_10k))
-        
         out_np_wav = self.restore_in_memory(wav_10k, cuda=cuda)
         save_wave(out_np_wav, fname=output, sample_rate=44100)
