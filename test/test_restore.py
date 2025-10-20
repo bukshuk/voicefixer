@@ -1,9 +1,10 @@
 import unittest
 
+from parameterized import parameterized
+from timeit import default_timer as timer
+
 import soundfile
 import numpy as np
-
-from timeit import default_timer as timer
 
 from voicefixer import VoiceFixer
 
@@ -12,19 +13,8 @@ class RestoreTest(unittest.TestCase):
     def setUp(self):
         self._vf = VoiceFixer()
 
-    def test_12(self):
-        self.process(12)
-
-    def test_19(self):
-        self.process(19)
-
-    def test_20(self):
-        self.process(20)
-
-    def test_68(self):
-        self.process(68)
-
-    def process(self, index):
+    @parameterized.expand([("12s", 12), ("19s", 19), ("20s", 20), ("68s", 68)])
+    def test(self, _, index):
         name = f"zmm-{index}_ambe"
         in_file_name = f"{name}.wav"
         out_file_name = f"{name}_vf.wav"
