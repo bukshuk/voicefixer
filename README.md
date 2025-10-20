@@ -11,9 +11,16 @@ from torch.onnx import export
 
 i1 = rand(1, 1, 3001, 1025, requires_grad=True)
 i2 = rand(1, 1, 3001, 128, requires_grad=True)
-    export(self._model, (i1, i2), "models/gen.onnx",
-    input_names=["ignore", "input"], output_names=["output"],
-    dynamic_axes= {"input": {2: "size"}}, export_params=True, verbose=False)
+export(
+    self._model, 
+    (i1, i2),
+    "models/gen.onnx",
+    input_names=["ignore", "input"],
+    output_names=["output"],
+    dynamic_axes= {"input": {2: "size"}}, 
+    export_params=True, 
+    verbose=False,
+)
 ```
 
 ## Export VOC.ONNX model (<= 30 sec)
