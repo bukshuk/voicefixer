@@ -1,4 +1,10 @@
 {
+  "files.exclude": {
+    "**/__pycache__/": true,
+    "*venv/": true,
+    "out/": true,
+    ".mypy_cache": true,
+  },
   "cSpell.words": [
     "denoiser",
     "stft",
