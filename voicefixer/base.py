@@ -4,23 +4,15 @@ from voicefixer.tools.mel_scale import MelScale
 from voicefixer.tools.modules.fDomainHelper import FDomainHelper
 from voicefixer.tools.pytorch_util import *
 from voicefixer.tools.wav import *
-from voicefixer.vocoder.base import Vocoder
 
 
-class VoiceFixer(nn.Module):
+class VoiceFixer:
     def __init__(self):
-        super(VoiceFixer, self).__init__()
-
         self._first_stage_model = InferenceSession("models/01.onnx", providers=["CPUExecutionProvider"])
+        self._second_stage_model = InferenceSession("models/02.onnx", providers=["CPUExecutionProvider"])
 
         self._f_domain_helper = FDomainHelper()
-
-        sample_rate=44100
-        window_size = 2048
-        n_stft = window_size // 2 + 1
-        self._mel_scale = MelScale(sample_rate=sample_rate, n_stft=n_stft)
-
-        self._vocoder = Vocoder(sample_rate)
+        self._mel_scale = MelScale(sample_rate=44100, n_stft=1025)
 
     def _load_wav_energy(self, path, sample_rate, threshold=0.95):
         wav_10k, _ = librosa.load(path, sr=sample_rate)
@@ -85,22 +77,25 @@ class VoiceFixer(nn.Module):
 
             mel_noisy = self._pre(segment, cuda)
 
-            logits = self._first_stage_model.run(["output"], {"input": mel_noisy.numpy()})
-            out_model = torch.from_numpy(logits[0])
-            mel_enhanced = from_log(out_model)
+            first_logits = self._first_stage_model.run(["output"], {"input": mel_noisy.numpy()})
+            first_out = torch.from_numpy(first_logits[0])
 
-            out = self._vocoder(mel_enhanced, cuda=cuda)
+            mel_enhanced = from_log(first_out)
+
+            second_logits = self._second_stage_model.run(["output"], {"input": mel_enhanced.numpy()})
+            second_out = torch.from_numpy(second_logits[0])
 
             # unify energy
-            if torch.max(torch.abs(out)) > 1.0:
-                out = out / torch.max(torch.abs(out))
+            if torch.max(torch.abs(second_out)) > 1.0:
+                second_out = second_out / torch.max(torch.abs(second_out))
                 print("Warning: Exceed energy limit,", input)
             # frame alignment
-            out, _ = self._trim_center(out, segment)
-            res.append(out)
+            second_out, _ = self._trim_center(second_out, segment)
+            res.append(second_out)
             break_point += seg_length
-        out = torch.cat(res, -1)
-        return tensor2numpy(out.squeeze(0))
+        second_out = torch.cat(res, -1)
+
+        return tensor2numpy(second_out.squeeze(0))
 
     def restore(self, input, output, cuda=False, mode=0, your_vocoder_func=None):
         wav_10k = self._load_wav(input, sample_rate=44100)

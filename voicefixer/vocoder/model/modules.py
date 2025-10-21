@@ -767,7 +767,7 @@ class ResBlock(nn.Module):
         skip_channels,
         kernel_size,
         dilation,
-        cin_channels=None,
+        cin_channels,
         local_conditioning=True,
         causal=False,
         mode="SAME",

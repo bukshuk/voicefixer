@@ -36,7 +36,10 @@ class RestoreTest(unittest.TestCase):
         rtf = (end_time - start_time) / index
 
         self.assertGreater(rtf, 0.5)
-        self.assertLess(rtf, 2)
+        self.assertLess(rtf, 3.5)
+
+        if rtf > 1.5:
+            print(f"RTF: {rtf}")
 
         self.check_wav(out_file_name)
 

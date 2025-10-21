@@ -9,15 +9,11 @@ class Config:
     def refresh(cls, sr):
         if sr == 44100:
             Config.ckpt = os.path.join(
-                os.path.expanduser("~"),
-                ".cache/voicefixer/synthesis_module/44100/model.ckpt-1490000_trimed.pt",
+                os.path.expanduser("~"), ".cache/voicefixer/synthesis_module/44100/model.ckpt-1490000_trimed.pt"
             )
             Config.cond_channels = 512
             Config.m_channels = 768
-            Config.resstack_depth = [8, 8, 8, 8]
             Config.channels = 1024
-            Config.cin_channels = 128
-            Config.upsample_scales = [7, 7, 3, 3]
             Config.num_mels = 128
             Config.n_fft = 2048
             Config.hop_length = 441
@@ -26,13 +22,10 @@ class Config:
             Config.mel_win = 128
             Config.local_condition_dim = 128
         else:
-            raise RuntimeError(
-                "Error: Vocoder currently only support 44100 samplerate."
-            )
+            raise RuntimeError("Error: Vocoder currently only support 44100 samplerate.")
 
     ckpt = os.path.join(
-        os.path.expanduser("~"),
-        ".cache/voicefixer/synthesis_module/44100/model.ckpt-1490000_trimed.pt",
+        os.path.expanduser("~"), ".cache/voicefixer/synthesis_module/44100/model.ckpt-1490000_trimed.pt"
     )
     m_channels = 384
     bits = 10
@@ -40,8 +33,7 @@ class Config:
     cond_channels = 256
     clip = 0.5
     num_bands = 1
-    cin_channels = 128
-    upsample_scales = [7, 7, 3, 3]
+
     filterbands = "test/filterbanks_4bands.dat"
     ##For inference
     tag = ""
@@ -110,26 +102,20 @@ class Config:
     up_org = False
     use_one = True
     use_small_D = False
-    use_condnet = True
     use_depreem = False  # inference
     use_msd = False
     model_type = "tfgan"  # or bytewave, frame level vocoder using istft
     use_hjcud = False
     no_skip = False
-    out_channels = 1
-    use_postnet = False  # wn in postnet
     use_wn = False  # wn in resstack
     up_type = "transpose"
     use_smooth = False
     use_drop = False
     use_shift_scale = False
     use_gcnn = False
-    resstack_depth = [6, 6, 6, 6]
-    kernel_size = [3, 3, 3, 3]
     channels = 512
     use_f0_loss = False
     use_sine = False
-    use_cond_rnn = False
     use_rnn = False
 
     f0_step = 120
@@ -293,24 +279,8 @@ class Config:
 
     x_orig = np.linspace(1, mel_weight_torch.shape[0], num=mel_weight_torch.shape[0])
 
-    x_orig_torch = torch.linspace(
-        1, mel_weight_torch.shape[0], steps=mel_weight_torch.shape[0]
-    )
+    x_orig_torch = torch.linspace(1, mel_weight_torch.shape[0], steps=mel_weight_torch.shape[0])
 
     @classmethod
-    def get_mel_weight(cls, percent=1, a=18.8927416350036, b=0.0269863588184314):
-        b = percent * b
-
-        def func(a, b, x):
-            return a * np.exp(b * x)
-
-        return func(a, b, Config.x_orig)
-
-    @classmethod
-    def get_mel_weight_torch(cls, percent=1, a=18.8927416350036, b=0.0269863588184314):
-        b = percent * b
-
-        def func(a, b, x):
-            return a * torch.exp(b * x)
-
-        return func(a, b, Config.x_orig_torch)
+    def get_mel_weight(cls, a=18.8927416350036, b=0.0269863588184314):
+        return a * torch.exp(b * cls.x_orig_torch)

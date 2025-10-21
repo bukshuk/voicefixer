@@ -31,7 +31,7 @@ from torch.onnx import export
 input = rand(1, 128, 3006, requires_grad=True)
 export(
     self.model,
-    input,
+    (input,),
     "models/voc.onnx",
     input_names=["input"],
     output_names=["output"],
