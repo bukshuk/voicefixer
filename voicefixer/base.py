@@ -5,6 +5,8 @@ from voicefixer.tools.modules.fDomainHelper import FDomainHelper
 from voicefixer.tools.pytorch_util import *
 from voicefixer.tools.wav import *
 
+import json
+
 
 class VoiceFixer:
     def __init__(self):
@@ -77,13 +79,17 @@ class VoiceFixer:
 
             mel_noisy = self._pre(segment, cuda)
 
+            # self.save_to_json(mel_noisy, "01_in")
             first_logits = self._first_stage_model.run(["output"], {"input": mel_noisy.numpy()})
             first_out = torch.from_numpy(first_logits[0])
+            # self.save_to_json(first_out, "01_out")
 
             mel_enhanced = from_log(first_out)
 
+            # self.save_to_json(mel_enhanced, "02_in")
             second_logits = self._second_stage_model.run(["output"], {"input": mel_enhanced.numpy()})
             second_out = torch.from_numpy(second_logits[0])
+            # self.save_to_json(second_out, "02_out")
 
             # unify energy
             if torch.max(torch.abs(second_out)) > 1.0:
@@ -101,3 +107,11 @@ class VoiceFixer:
         wav_10k = self._load_wav(input, sample_rate=44100)
         out_np_wav = self.restore_in_memory(wav_10k, cuda=cuda)
         save_wave(out_np_wav, fname=output, sample_rate=44100)
+
+    def save_to_json(self, data, name):
+        try:
+            with open(f"{name}.json", "w") as f:
+                json.dump(data.numpy().flatten().tolist(), f, indent=4)
+                print(f"Tensor {data.shape} successfully saved to {name}.json")
+        except IOError as e:
+            print(f"Error writing to file: {e}")
