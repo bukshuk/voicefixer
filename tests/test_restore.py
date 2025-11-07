@@ -1,3 +1,4 @@
+import pytest
 import soundfile
 import numpy as np
 
@@ -5,26 +6,13 @@ from timeit import default_timer as timer
 from voicefixer import VoiceFixer
 
 
-vf = VoiceFixer()
+@pytest.fixture
+def vf():
+    return VoiceFixer()
 
 
-def test_12s():
-    process(12)
-
-
-def test_19s():
-    process(19)
-
-
-def test_20s():
-    process(20)
-
-
-def test_68s():
-    process(68)
-
-
-def process(index):
+@pytest.mark.parametrize("index", [(12), (19), (20), (68)])
+def test_process(vf, index):
     name = f"zmm-{index}_ambe"
     in_file_name = f"{name}.wav"
     out_file_name = f"{name}_vf.wav"
