@@ -3,26 +3,60 @@
     "**/__pycache__/": true,
     "*venv/": true,
     "out/": true,
-    ".mypy_cache": true,
+    ".mypy_cache": true
   },
   "cSpell.words": [
     "denoiser",
+    "filterwarnings",
     "pytest",
     "stft",
     "unet",
     "voicefixer"
   ],
-  "python.testing.unittestArgs": [
-    "-v",
-    "-s",
-    "./test",
-    "-p",
-    "test_*.py"
-  ],
   "python.testing.pytestEnabled": true,
   "python.testing.unittestEnabled": false,
-  "python.testing.pytestArgs": [
-    "-W ignore::DeprecationWarning",
-    "."
+  "python.testing.pytestArgs": [".", "-v", "-s"],
+  "gherkiner.padding.table": 4,
+  "gherkiner.paddings": [
+    {
+      "keyword": "Feature",
+      "padding": 0
+    },
+    {
+      "keyword": "Scenario",
+      "padding": 2
+    },
+    {
+      "keyword": "Given",
+      "padding": 4
+    },
+    {
+      "keyword": "When",
+      "padding": 4
+    },
+    {
+      "keyword": "Then",
+      "padding": 4
+    },
+    {
+      "keyword": "And",
+      "padding": 6
+    },
+    {
+      "keyword": "But",
+      "padding": 6
+    },
+    {
+      "keyword": "Backgroud",
+      "padding": 2
+    },
+    {
+      "keyword": "Before Action",
+      "padding": 2
+    },
+    {
+      "keyword": "Examples",
+      "padding": 4
+    }
   ]
 }

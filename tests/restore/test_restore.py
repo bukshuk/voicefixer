@@ -1,18 +1,23 @@
-import pytest
+from pytest_bdd import scenarios, given, when, then, parsers
+
 import soundfile
 import numpy as np
 
 from timeit import default_timer as timer
+
 from voicefixer import VoiceFixer
 
 
-@pytest.fixture
-def vf():
+scenarios("restore.feature")
+
+
+@given("the VoiceFixer model", target_fixture="vf")
+def step_voicefixer():
     return VoiceFixer()
 
 
-@pytest.mark.parametrize("index", [(12), (19), (20), (68)])
-def test_process(vf, index):
+@when(parsers.parse("I restore recording with the {index:d}"), target_fixture="restored_file")
+def step_restore(vf: VoiceFixer, index: int):
     name = f"zmm-{index}_ambe"
     in_file_name = f"{name}.wav"
     out_file_name = f"{name}_vf.wav"
@@ -28,12 +33,13 @@ def test_process(vf, index):
     if rtf > 1.5:
         print(f"RTF: {rtf}")
 
-    check_wav(out_file_name)
+    return out_file_name
 
 
-def check_wav(file_name):
-    expected_file_path = f"tests/check/{file_name}"
-    current_file_path = f"audio/{file_name}"
+@then("I get the restored recording")
+def step_check(restored_file: str):
+    expected_file_path = f"tests/check/{restored_file}"
+    current_file_path = f"audio/{restored_file}"
 
     expected_signal, expected_sr = soundfile.read(expected_file_path)
     current_signal, current_sr = soundfile.read(current_file_path)
