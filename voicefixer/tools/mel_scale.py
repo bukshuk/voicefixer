@@ -26,6 +26,7 @@ class MelScale(torch.nn.Module):
         :py:func:`torchaudio.functional.melscale_fbanks` - The function used to
         generate the filter banks.
     """
+
     __constants__ = ["n_mels", "sample_rate", "f_min", "f_max"]
 
     def __init__(
@@ -46,35 +47,12 @@ class MelScale(torch.nn.Module):
         self.norm = norm
         self.mel_scale = mel_scale
 
-        assert f_min <= self.f_max, "Require f_min: {} < f_max: {}".format(
-            f_min, self.f_max
-        )
-        fb = melscale_fbanks(
-            n_stft,
-            self.f_min,
-            self.f_max,
-            self.n_mels,
-            self.sample_rate,
-            self.norm,
-            self.mel_scale,
-        )
+        assert f_min <= self.f_max, "Require f_min: {} < f_max: {}".format(f_min, self.f_max)
+        fb = melscale_fbanks(n_stft, self.f_min, self.f_max, self.n_mels, self.sample_rate, self.norm, self.mel_scale)
         self.register_buffer("fb", fb)
 
-    def forward(self, specgram: Tensor) -> Tensor:
-        r"""
-        Args:
-            specgram (Tensor): A spectrogram STFT of dimension (..., freq, time).
-
-        Returns:
-            Tensor: Mel frequency spectrogram of size (..., ``n_mels``, time).
-        """
-
-        # (..., time, freq) dot (freq, n_mels) -> (..., n_mels, time)
-        mel_specgram = torch.matmul(specgram.transpose(-1, -2), self.fb).transpose(
-            -1, -2
-        )
-
-        return mel_specgram
+    def forward(self, spectrogram: Tensor) -> Tensor:
+        return torch.matmul(spectrogram, self.fb)
 
 
 def _hz_to_mel(freq: float, mel_scale: str = "htk") -> float:
@@ -144,10 +122,7 @@ def _mel_to_hz(mels: Tensor, mel_scale: str = "htk") -> Tensor:
     return freqs
 
 
-def _create_triangular_filterbank(
-    all_freqs: Tensor,
-    f_pts: Tensor,
-) -> Tensor:
+def _create_triangular_filterbank(all_freqs: Tensor, f_pts: Tensor) -> Tensor:
     """Create a triangular filter bank.
 
     Args:

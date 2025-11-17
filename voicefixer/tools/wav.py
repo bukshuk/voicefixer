@@ -24,12 +24,7 @@ def save_wave(frames: np.ndarray, fname, sample_rate=44100):
             + " please check if it's correct."
         )
         # print(msg)
-    if (
-        np.max(frames) <= 1
-        and frames.dtype == np.float32
-        or frames.dtype == np.float16
-        or frames.dtype == np.float64
-    ):
+    if np.max(frames) <= 1 and frames.dtype == np.float32 or frames.dtype == np.float16 or frames.dtype == np.float64:
         frames *= 2**15
     frames = frames.astype(np.short)
     if len(frames.shape) >= 3:
@@ -62,18 +57,11 @@ def random_chunk_wav_file(fname, chunk_length):
             return frames, duration, sample_rate  # [-1,1]
         else:
             # Random trunk
-            random_starts = np.random.randint(
-                0, sample_length - sample_rate * chunk_length
-            )
+            random_starts = np.random.randint(0, sample_length - sample_rate * chunk_length)
             random_end = random_starts + sample_rate * chunk_length
-            random_starts, random_end = (
-                random_starts / sample_rate,
-                random_end / sample_rate,
-            )
+            random_starts, random_end = (random_starts / sample_rate, random_end / sample_rate)
             random_starts, random_end = random_starts / duration, random_end / duration
-            frames = read_wave(
-                fname, sample_rate, portion_start=random_starts, portion_end=random_end
-            )
+            frames = read_wave(fname, sample_rate, portion_start=random_starts, portion_end=random_end)
             frames = constrain_length(frames, length=int(chunk_length * sample_rate))
             return frames, chunk_length, sample_rate
 
@@ -94,31 +82,16 @@ def random_chunk_wav_file_v2(fname, chunk_length, random_starts=None, random_end
         else:
             # Random trunk
             if random_starts is None and random_end is None:
-                random_starts = np.random.randint(
-                    0, sample_length - sample_rate * chunk_length
-                )
+                random_starts = np.random.randint(0, sample_length - sample_rate * chunk_length)
                 random_end = random_starts + sample_rate * chunk_length
-                random_starts, random_end = (
-                    random_starts / sample_rate,
-                    random_end / sample_rate,
-                )
-                random_starts, random_end = (
-                    random_starts / duration,
-                    random_end / duration,
-                )
-            frames = read_wave(
-                fname, sample_rate, portion_start=random_starts, portion_end=random_end
-            )
+                random_starts, random_end = (random_starts / sample_rate, random_end / sample_rate)
+                random_starts, random_end = (random_starts / duration, random_end / duration)
+            frames = read_wave(fname, sample_rate, portion_start=random_starts, portion_end=random_end)
             frames = constrain_length(frames, length=int(chunk_length * sample_rate))
             return frames, chunk_length, sample_rate, random_starts, random_end
 
 
-def read_wave(
-    fname,
-    sample_rate,
-    portion_start=0,
-    portion_end=1,
-):  # Whether you want raw bytes
+def read_wave(fname, sample_rate, portion_start=0, portion_end=1):  # Whether you want raw bytes
     """
     :param fname: wav file path
     :param sample_rate:
@@ -152,11 +125,7 @@ def read_wave(
 def get_channels_sampwidth_and_sample_rate(fname):
     with wave.open(fname) as f:
         params = f.getparams()
-    return (
-        params[0],
-        params[1],
-        params[2],
-    )  # == (2,2,44100),(params[0],params[1],params[2])
+    return (params[0], params[1], params[2])  # == (2,2,44100),(params[0],params[1],params[2])
 
 
 def get_channels(fname):
@@ -171,7 +140,7 @@ def get_sample_rate(fname):
     return params[2]
 
 
-def get_duration(fname):
+def get_duration(fname) -> int:
     with wave.open(fname) as f:
         params = f.getparams()
     return params[3] / params[2]
@@ -192,30 +161,13 @@ def calculate_total_times(dir):
     total = 0
     for each in os.listdir(dir):
         fname = os.path.join(dir, each)
+        duration = 0
         try:
             duration = get_duration(fname)
         except:
             print(fname)
         total += duration
     return total
-
-
-def filter(pth):
-    global dic
-    temp = []
-    for each in os.listdir(pth):
-        temp.append(os.path.join(pth, each))
-    for each in temp:
-        sr = get_sample_rate(each)
-        if sr not in dic.keys():
-            dic[sr] = []
-        dic[sr].append(each)
-    for each in dic[16000]:
-        # print(each)
-        pass
-    print(dic.keys())
-    for each in list(dic.keys()):
-        print(each, len(dic[each]))
 
 
 if __name__ == "__main__":
