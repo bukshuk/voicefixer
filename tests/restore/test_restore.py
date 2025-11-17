@@ -23,7 +23,7 @@ def step_restore(vf: VoiceFixer, index: int):
     out_file_name = f"{name}_vf.wav"
 
     start_time = timer()
-    vf.restore(input=f"audio/{in_file_name}", output=f"audio/{out_file_name}")
+    vf.restore(input_path=f"audio/{in_file_name}", output_path=f"audio/{out_file_name}")
     end_time = timer()
 
     rtf = (end_time - start_time) / index

@@ -10,7 +10,7 @@ file_name = f"zmm-{length}_ambe"
 
 start_time = timer()
 
-voicefixer.restore(input=f"{base_dir}/{file_name}.wav", output=f"{base_dir}/{file_name}_vf.wav")
+voicefixer.restore(input_path=f"{base_dir}/{file_name}.wav", output_path=f"{base_dir}/{file_name}_vf.wav")
 
 end_time = timer()
 
