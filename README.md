@@ -1,7 +1,7 @@
 ## Run tests
 
 ```
-python -W ignore::DeprecationWarning -m unittest .\test\base_test.py
+python -m pytest -k "short" -s -v
 ```
 
 ## Export GEN.ONNX model (<= 30 sec)
