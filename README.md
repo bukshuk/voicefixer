@@ -199,40 +199,6 @@ Pass
 - voicefixer.restore
 - vocoder.oracle
 
-```python
-...
-
-# TEST VOICEFIXER
-## Initialize a voicefixer
-print("Initializing VoiceFixer...")
-voicefixer = VoiceFixer()
-# Mode 0: Original Model (suggested by default)
-# Mode 1: Add preprocessing module (remove higher frequency)
-# Mode 2: Train mode (might work sometimes on seriously degraded real speech)
-for mode in [0,1,2]:
-    print("Testing mode",mode)
-    voicefixer.restore(input=os.path.join(git_root,"test/utterance/original/original.flac"), # low quality .wav/.flac file
-                       output=os.path.join(git_root,"test/utterance/output/output_mode_"+str(mode)+".flac"), # save file path
-                       cuda=False, # GPU acceleration
-                       mode=mode)
-    if(mode != 2):
-        check("output_mode_"+str(mode)+".flac")
-    print("Pass")
-
-# TEST VOCODER
-## Initialize a vocoder
-print("Initializing 44.1kHz speech vocoder...")
-vocoder = Vocoder(sample_rate=44100)
-
-### read wave (fpath) -> mel spectrogram -> vocoder -> wave -> save wave (out_path)
-print("Test vocoder using groundtruth mel spectrogram...")
-vocoder.oracle(fpath=os.path.join(git_root,"test/utterance/original/p360_001_mic1.flac"),
-               out_path=os.path.join(git_root,"test/utterance/output/oracle.flac"),
-               cuda=False) # GPU acceleration
-
-...
-```
-
 You can clone this repo and try to run test.py inside the *test* folder.
 
 ### Docker
@@ -284,15 +250,6 @@ First you need to write a following helper function with your model. Similar to 
         :return: [batchsize, 1, samples]
         """
         return wav
-```
-
-Then pass this function to *voicefixer.restore*, for example:
-```
-voicefixer.restore(input="", # input wav file path
-                   output="", # output wav file path
-                   cuda=False, # whether to use gpu acceleration
-                   mode = 0,
-                   your_vocoder_func = convert_mel_to_wav)
 ```
 
 Note: 

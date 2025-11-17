@@ -60,24 +60,23 @@ class VoiceFixer:
             est, ref = est[..., :min_len], ref[..., :min_len]
             return est, ref
 
-    def _pre(self, input, cuda):
+    def _pre(self, input):
         input = input[None, None, ...]
         input = torch.tensor(input)
-        input = try_tensor_cuda(input, cuda=cuda)
         sp, _, _ = self._f_domain_helper.wav_to_spectrogram_phase(input)
         mel_orig = self._mel_scale(sp.permute(0, 1, 3, 2)).permute(0, 1, 3, 2)
 
         return mel_orig
 
     @torch.no_grad()
-    def restore_in_memory(self, wav_10k, cuda=False):
+    def restore_in_memory(self, wav_10k):
         res = []
         seg_length = 44100 * 30
         break_point = seg_length
         while break_point < wav_10k.shape[0] + seg_length:
             segment = wav_10k[break_point - seg_length : break_point]
 
-            mel_noisy = self._pre(segment, cuda)
+            mel_noisy = self._pre(segment)
 
             # self.save_to_json(mel_noisy, "01_in")
             first_logits = self._first_stage_model.run(["output"], {"input": mel_noisy.numpy()})
@@ -101,11 +100,11 @@ class VoiceFixer:
             break_point += seg_length
         second_out = torch.cat(res, -1)
 
-        return tensor2numpy(second_out.squeeze(0))
+        return second_out.squeeze(0).detach().numpy()
 
-    def restore(self, input, output, cuda=False, mode=0, your_vocoder_func=None):
+    def restore(self, input, output):
         wav_10k = self._load_wav(input, sample_rate=44100)
-        out_np_wav = self.restore_in_memory(wav_10k, cuda=cuda)
+        out_np_wav = self.restore_in_memory(wav_10k)
         save_wave(out_np_wav, fname=output, sample_rate=44100)
 
     def save_to_json(self, data, name):

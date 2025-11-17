@@ -37,13 +37,6 @@ def move_data_to_device(x, device):
     return x.to(device)
 
 
-def tensor2numpy(tensor):
-    if "cuda" in str(tensor.device):
-        return tensor.detach().cpu().numpy()
-    else:
-        return tensor.detach().numpy()
-
-
 def count_parameters(model):
     for p in model.parameters():
         if p.requires_grad:
