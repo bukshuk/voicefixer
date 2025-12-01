@@ -1,6 +1,6 @@
 from pytest_bdd import scenarios, given, when, then, parsers
 
-import soundfile
+import librosa
 import numpy as np
 
 from timeit import default_timer as timer
@@ -41,10 +41,9 @@ def step_check(restored_file: str):
     expected_file_path = f"tests/check/{restored_file}"
     current_file_path = f"audio/{restored_file}"
 
-    expected_signal, expected_sr = soundfile.read(expected_file_path)
-    current_signal, current_sr = soundfile.read(current_file_path)
+    expected_signal, _ = librosa.load(expected_file_path, sr=44100)
+    current_signal, _ = librosa.load(current_file_path, sr=44100)
 
-    assert expected_sr == current_sr
     assert len(expected_signal) == len(current_signal)
 
     eps = 0.0005

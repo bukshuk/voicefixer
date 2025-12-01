@@ -39,14 +39,14 @@ class VoiceFixer:
     def run_onnx_model(self, model: InferenceSession, input: np.ndarray):
         return model.run(["output"], {"input": input})[0]
 
-    def restore_in_memory(self, signal):
+    def restore_in_memory(self, signal: np.ndarray):
         res = []
         seg_length = SAMPLE_RATE * 30
         break_point = seg_length
         while break_point < signal.shape[0] + seg_length:
             segment = signal[break_point - seg_length : break_point]
 
-            pre_first_out = from_numpy(self.run_onnx_model(self._pre_first_stage_model, segment[None, None, :]))
+            pre_first_out = from_numpy(self.run_onnx_model(self._pre_first_stage_model, segment.reshape(1, 1, -1)))
 
             mel_noisy = self._mel_scale(pre_first_out)
 
