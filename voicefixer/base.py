@@ -51,7 +51,6 @@ class VoiceFixer:
             first_out = pow(10, clamp(first_out, min=-np.inf, max=5))
 
             second_out = self.run_onnx_model(self._second_stage_model, first_out)
-
             second_out, _ = self._trim_center(second_out, segment)
 
             res.append(second_out)
