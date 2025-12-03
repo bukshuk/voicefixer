@@ -46,7 +46,7 @@ def step_check(restored_file: str):
 
     assert len(expected_signal) == len(current_signal)
 
-    eps = 0.0005
-    signal_diff = np.mean(np.abs(expected_signal - current_signal))
+    eps = 1e-5
+    signal_mse = np.mean((expected_signal - current_signal)**2)
 
-    assert signal_diff < eps
+    assert signal_mse < eps
