@@ -40,7 +40,7 @@ class VoiceFixer:
             first_out = pow(10, clamp(first_out, min=-np.inf, max=5))
 
             second_out = self.run_onnx_model(self._second_stage_model, first_out)
-            second_out, _ = self.trim_center(second_out, segment)
+            second_out = self.trim_center(second_out, segment)
 
             res.append(second_out)
             break_point += seg_length
@@ -55,15 +55,10 @@ class VoiceFixer:
     def trim_center(self, est, ref):
         est_len = est.shape[-1]
         ref_len = ref.shape[-1]
-        min_len = min(est_len, ref_len)
-        pad = int(np.abs(est_len - ref_len) // 2)
 
-        if est_len > min_len:
+        if est_len > ref_len:
+            pad = int((est_len - ref_len) // 2)
             est = est[..., pad:]
-            est = est[..., :min_len]
+            est = est[..., :ref_len]
 
-        if ref_len > min_len:
-            ref = ref[..., pad:]
-            ref = ref[..., :min_len]
-
-        return est, ref
+        return est

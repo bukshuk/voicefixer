@@ -52,7 +52,7 @@ import json
     self.save_to_json(first_out, "01_out")
 ...
 
-def save_to_json(self, data, name):
+def save_to_json(self, data: Tensor, name: str):
     try:
         with open(f"{name}.json", "w") as f:
             json.dump(data.numpy().flatten().tolist(), f, indent=4)
